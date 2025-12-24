@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}📊 آمار{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">📊 Analytics</h1>
+    <p class="text-gray-500">نمودارها و تحلیل‌ها</p>
+</div>
+
+<!-- آمار کلی -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-purple-500">{{ summary.get('avg_mood', '-') }}</div>
+        <div class="text-sm text-gray-500">😊 میانگین Mood</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-blue-500">{{ summary.get('avg_energy', '-') }}</div>
+        <div class="text-sm text-gray-500">⚡ میانگین Energy</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-green-500">{{ task_stats.get('done', 0) }}</div>
+        <div class="text-sm text-gray-500">✅ کارهای انجام شده</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-orange-500">{{ summary.get('days_tracked', 0) }}</div>
+        <div class="text-sm text-gray-500">📅 روزهای ثبت شده</div>
+    </div>
+</div>
+
+<!-- نمودار Mood و Energy -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="card">
+        <h2 class="card-title mb-4">😊 روند Mood و Energy</h2>
+        {% if sheets_configured %}
+        <div class="h-64">
+            <canvas id="mood-chart"></canvas>
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            Google Sheets تنظیم نشده
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h2 class="card-title mb-4">📊 توزیع کوادرانت‌ها</h2>
+        {% if notion_configured %}
+        <div class="h-64">
+            <canvas id="quadrant-chart"></canvas>
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            Notion تنظیم نشده
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- نمودارهای جدید -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Bad Habits Frequency -->
+    <div class="card">
+        <h2 class="card-title mb-4">🔴 فراوانی عادت‌های بد</h2>
+        {% if sheets_configured %}
+        <div class="h-64">
+            <canvas id="bad-habits-chart"></canvas>
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            نیاز به Google Sheets
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Good Habits Streak -->
+    <div class="card">
+        <h2 class="card-title mb-4">🟢 روند عادت‌های خوب</h2>
+        {% if sheets_configured %}
+        <div class="h-64">
+            <canvas id="good-habits-chart"></canvas>
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            نیاز به Google Sheets
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Techniques Usage -->
+    <div class="card">
+        <h2 class="card-title mb-4">⚡ تکنیک‌های استفاده شده</h2>
+        {% if sheets_configured %}
+        <div class="h-64">
+            <canvas id="techniques-chart"></canvas>
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            نیاز به Google Sheets
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Energy Distribution -->
+    <div class="card">
+        <h2 class="card-title mb-4">🔋 توزیع انرژی کارها</h2>
+        {% if notion_configured %}
+        <div class="h-64">
+            <canvas id="energy-chart"></canvas>
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            Notion تنظیم نشده
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- فرم ثبت Daily Log -->
+<div class="card">
+    <h2 class="card-title mb-4">📝 ثبت لاگ امروز</h2>
+    
+    {% if sheets_configured %}
+    <form id="daily-log-form" onsubmit="submitDailyLog(event)">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <!-- Mood -->
+            <div>
+                <label class="label">😊 Mood (1-10)</label>
+                <input type="range" id="log-mood" min="1" max="10" value="5" 
+                       class="w-full" oninput="document.getElementById('mood-val').textContent = this.value">
+                <div class="text-center text-sm text-gray-500">
+                    <span id="mood-val">5</span> / 10
+                </div>
+            </div>
+            
+            <!-- Energy -->
+            <div>
+                <label class="label">⚡ Energy (1-10)</label>
+                <input type="range" id="log-energy" min="1" max="10" value="5"
+                       class="w-full" oninput="document.getElementById('energy-val').textContent = this.value">
+                <div class="text-center text-sm text-gray-500">
+                    <span id="energy-val">5</span> / 10
+                </div>
+            </div>
+            
+            <!-- Top Win -->
+            <div>
+                <label class="label">🏆 بهترین کار امروز</label>
+                <input type="text" id="log-topwin" class="input-field w-full" 
+                       placeholder="چه کاری انجام دادی؟">
+            </div>
+            
+            <!-- Techniques Used (جدید) -->
+            <div>
+                <label class="label">⚡ تکنیک‌های استفاده شده</label>
+                <input type="text" id="log-techniques" class="input-field w-full"
+                       placeholder="Pomodoro, Time Boxing, ...">
+            </div>
+            
+            <!-- Bad Habits (جدید) -->
+            <div>
+                <label class="label">🔴 عادت‌های بد امروز</label>
+                <input type="text" id="log-badhabits" class="input-field w-full"
+                       placeholder="با کاما جدا کن">
+            </div>
+            
+            <!-- Good Habits (جدید) -->
+            <div>
+                <label class="label">🟢 عادت‌های خوب امروز</label>
+                <input type="text" id="log-goodhabits" class="input-field w-full"
+                       placeholder="با کاما جدا کن">
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Main Obstacle -->
+            <div>
+                <label class="label">🚧 مانع اصلی</label>
+                <input type="text" id="log-obstacle" class="input-field w-full"
+                       placeholder="چی جلوت رو گرفت؟">
+            </div>
+            
+            <!-- Desires (جدید) -->
+            <div>
+                <label class="label">💭 خواسته‌ها و آرزوها</label>
+                <input type="text" id="log-desires" class="input-field w-full"
+                       placeholder="امروز چی می‌خواستی؟">
+            </div>
+        </div>
+        
+        <!-- Reflection -->
+        <div class="mb-4">
+            <label class="label">💡 بازتاب روز</label>
+            <textarea id="log-reflection" class="input-field w-full" rows="2"
+                      placeholder="چی یاد گرفتی؟"></textarea>
+        </div>
+        
+        <!-- Daily Report (جدید) -->
+        <div class="mb-4">
+            <label class="label">📝 گزارش کامل روز</label>
+            <textarea id="log-report" class="input-field w-full" rows="3"
+                      placeholder="خلاصه‌ای از کل روز..."></textarea>
+        </div>
+        
+        <button type="submit" class="btn-primary">
+            💾 ثبت لاگ
+        </button>
+    </form>
+    {% else %}
+    <div class="text-center py-8 text-gray-400">
+        <p>برای ثبت لاگ، Google Sheets رو تنظیم کن</p>
+        <a href="{{ url_for('settings_page') }}" class="text-primary underline">رفتن به تنظیمات</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+// داده‌ها از سرور
+const moodData = {{ mood_data|safe }};
+const taskStats = {{ task_stats|tojson }};
+const badHabitsFreq = {{ bad_habits_freq|safe }};
+const goodHabitsStreak = {{ good_habits_streak|safe }};
+const techniquesUsage = {{ techniques_usage|safe }};
+
+// رندر نمودارها
+document.addEventListener('DOMContentLoaded', function() {
+    // Mood & Energy
+    if (moodData && moodData.labels && moodData.labels.length > 0) {
+        renderMoodChart('mood-chart', moodData);
+    }
+    
+    // Quadrant
+    if (taskStats && taskStats.by_quadrant) {
+        renderQuadrantChart('quadrant-chart', taskStats.by_quadrant);
+    }
+    
+    // Bad Habits
+    if (badHabitsFreq && badHabitsFreq.length > 0) {
+        renderBadHabitsChart('bad-habits-chart', badHabitsFreq);
+    }
+    
+    // Good Habits
+    if (goodHabitsStreak && goodHabitsStreak.length > 0) {
+        renderGoodHabitsChart('good-habits-chart', goodHabitsStreak);
+    }
+    
+    // Techniques
+    if (techniquesUsage && techniquesUsage.length > 0) {
+        renderTechniquesChart('techniques-chart', techniquesUsage);
+    }
+    
+    // Energy
+    if (taskStats && taskStats.by_energy) {
+        renderEnergyChart('energy-chart', taskStats.by_energy);
+    }
+});
+
+// ثبت Daily Log
+async function submitDailyLog(event) {
+    event.preventDefault();
+    
+    const data = {
+        mood: parseInt(document.getElementById('log-mood').value),
+        energy: parseInt(document.getElementById('log-energy').value),
+        top_win: document.getElementById('log-topwin').value,
+        main_obstacle: document.getElementById('log-obstacle').value,
+        reflection: document.getElementById('log-reflection').value,
+        techniques_used: document.getElementById('log-techniques').value,
+        bad_habits: document.getElementById('log-badhabits').value,
+        good_habits: document.getElementById('log-goodhabits').value,
+        desires: document.getElementById('log-desires').value,
+        daily_report: document.getElementById('log-report').value
+    };
+    
+    try {
+        const response = await fetch('/api/log-mood', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('لاگ ثبت شد! 📝', 'success');
+            document.getElementById('daily-log-form').reset();
+            document.getElementById('mood-val').textContent = '5';
+            document.getElementById('energy-val').textContent = '5';
+        } else {
+            showToast(result.error || 'خطا', 'error');
+        }
+    } catch (error) {
+        showToast('خطا در ارتباط', 'error');
+    }
+}
+</script>
+{% endblock %}

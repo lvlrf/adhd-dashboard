@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block title %}📋 کارها{% endblock %}
+
+{% block content %}
+<!-- هدر -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">📋 لیست کارها</h1>
+        <p class="text-gray-500">{{ total_tasks }} کار</p>
+    </div>
+    
+    <button onclick="openAddModal()" class="btn-primary">
+        ➕ کار جدید
+    </button>
+</div>
+
+<!-- فیلترها -->
+<div class="card mb-6">
+    <form method="GET" class="flex flex-wrap gap-3">
+        <!-- جستجو -->
+        <div class="flex-1 min-w-[200px]">
+            <input type="text" name="q" value="{{ filters.q }}" 
+                   placeholder="🔍 جستجو..." 
+                   class="input-field w-full">
+        </div>
+        
+        <!-- Status -->
+        <select name="status" class="input-field">
+            <option value="">همه وضعیت‌ها</option>
+            {% for opt in status_values %}
+            <option value="{{ opt.name }}" {% if filters.status == opt.name %}selected{% endif %}>
+                {{ opt.name }}
+            </option>
+            {% endfor %}
+        </select>
+        
+        <!-- Energy -->
+        <select name="energy" class="input-field">
+            <option value="">همه انرژی‌ها</option>
+            {% for opt in energy_values %}
+            <option value="{{ opt.name }}" {% if filters.energy == opt.name %}selected{% endif %}>
+                {{ opt.name }}
+            </option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit" class="btn-secondary">فیلتر</button>
+        <a href="{{ url_for('tasks_page') }}" class="btn-secondary">پاک کردن</a>
+    </form>
+</div>
+
+<!-- لیست Tasks -->
+<div class="space-y-3" id="tasks-list">
+    {% for task in tasks %}
+    <div class="card hover:shadow-md transition-shadow task-item" data-id="{{ task.id }}">
+        <div class="flex items-start gap-3">
+            <!-- Checkbox -->
+            <button onclick="markDone('{{ task.id }}')" 
+                    class="task-checkbox mt-1 shrink-0">✓</button>
+            
+            <!-- محتوا -->
+            <div class="flex-1 min-w-0">
+                <h3 class="font-medium text-gray-800">{{ task.title }}</h3>
+                
+                <!-- تگ‌ها -->
+                <div class="flex flex-wrap gap-1 mt-2">
+                    <!-- Status -->
+                    <span class="tag 
+                        {% if 'Done' in task.status %}bg-green-100 text-green-700
+                        {% elif 'Progress' in task.status %}bg-yellow-100 text-yellow-700
+                        {% elif 'Next' in task.status %}bg-blue-100 text-blue-700
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ task.status }}
+                    </span>
+                    
+                    <!-- Quadrant -->
+                    <span class="tag 
+                        {% if task.quadrant == 1 %}bg-q1/10 text-q1
+                        {% elif task.quadrant == 2 %}bg-q2/10 text-q2
+                        {% elif task.quadrant == 3 %}bg-q3/10 text-q3
+                        {% else %}bg-q4/10 text-q4{% endif %}">
+                        Q{{ task.quadrant }}
+                    </span>
+                    
+                    <!-- Energy -->
+                    {% if task.energy %}
+                    <span class="tag bg-orange-100 text-orange-700">{{ task.energy }}</span>
+                    {% endif %}
+                    
+                    <!-- Quick Win -->
+                    {% if task.quick_win %}
+                    <span class="tag bg-yellow-100 text-yellow-700">⚡ Quick Win</span>
+                    {% endif %}
+                    
+                    <!-- Context -->
+                    {% for ctx in task.context %}
+                    <span class="tag bg-purple-100 text-purple-700">{{ ctx }}</span>
+                    {% endfor %}
+                </div>
+                
+                <!-- Notes -->
+                {% if task.notes %}
+                <p class="text-sm text-gray-500 mt-2 truncate">{{ task.notes }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Due Date -->
+            {% if task.due_date %}
+            <div class="text-xs text-gray-400 shrink-0">
+                📅 {{ task.due_date }}
+            </div>
+            {% endif %}
+            
+            <!-- اکشن‌ها -->
+            <div class="flex gap-1 shrink-0">
+                <button onclick="editTask('{{ task.id }}')" class="btn-icon" title="ویرایش">✏️</button>
+                <button onclick="deleteTask('{{ task.id }}')" class="btn-icon text-red-400 hover:text-red-600" title="حذف">🗑️</button>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card text-center py-12">
+        <div class="text-5xl mb-4">📋</div>
+        <h3 class="text-lg font-medium text-gray-600">کاری پیدا نشد</h3>
+        <p class="text-gray-400 mt-1">یک کار جدید اضافه کن یا فیلترها رو عوض کن</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="flex justify-center gap-2 mt-6">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&status={{ filters.status }}&energy={{ filters.energy }}&q={{ filters.q }}" 
+       class="btn-secondary">← قبلی</a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-gray-600">
+        صفحه {{ page }} از {{ total_pages }}
+    </span>
+    
+    {% if page < total_pages %}
+    <a href="?page={{ page + 1 }}&status={{ filters.status }}&energy={{ filters.energy }}&q={{ filters.q }}" 
+       class="btn-secondary">بعدی →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Modal اضافه/ویرایش -->
+<div id="task-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeModal()"></div>
+    <div class="modal-content max-w-lg">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold" id="modal-title">➕ کار جدید</h2>
+            <button onclick="closeModal()" class="btn-icon">✕</button>
+        </div>
+        
+        <form id="task-form" onsubmit="submitTask(event)">
+            <input type="hidden" id="task-id" value="">
+            
+            <!-- عنوان -->
+            <div class="mb-4">
+                <label class="label">عنوان *</label>
+                <input type="text" id="task-title" class="input-field w-full" 
+                       placeholder="چیکار باید بکنم؟" required>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <!-- Status -->
+                <div>
+                    <label class="label">وضعیت</label>
+                    <select id="task-status" class="input-field w-full">
+                        {% for opt in status_values %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Energy -->
+                <div>
+                    <label class="label">انرژی مورد نیاز</label>
+                    <select id="task-energy" class="input-field w-full">
+                        <option value="">انتخاب کنید</option>
+                        {% for opt in energy_values %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Importance -->
+                <div>
+                    <label class="label">اهمیت</label>
+                    <select id="task-importance" class="input-field w-full">
+                        <option value="">انتخاب کنید</option>
+                        {% for opt in importance_values %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Urgency -->
+                <div>
+                    <label class="label">فوریت</label>
+                    <select id="task-urgency" class="input-field w-full">
+                        <option value="">انتخاب کنید</option>
+                        {% for opt in urgency_values %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Time -->
+                <div>
+                    <label class="label">زمان تخمینی</label>
+                    <select id="task-time" class="input-field w-full">
+                        <option value="">انتخاب کنید</option>
+                        {% for opt in time_values %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Due Date -->
+                <div>
+                    <label class="label">ددلاین</label>
+                    <input type="date" id="task-due" class="input-field w-full">
+                </div>
+            </div>
+            
+            <!-- Context -->
+            <div class="mb-4">
+                <label class="label">محیط/ابزار</label>
+                <div class="flex flex-wrap gap-2" id="context-checkboxes">
+                    {% for opt in context_values %}
+                    <label class="flex items-center gap-1 text-sm cursor-pointer">
+                        <input type="checkbox" name="context" value="{{ opt.name }}" class="rounded">
+                        {{ opt.name }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Quick Win -->
+            <div class="mb-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="task-quickwin" class="rounded">
+                    <span>⚡ Quick Win (کمتر از 15 دقیقه و ارزشمند)</span>
+                </label>
+            </div>
+            
+            <!-- Notes -->
+            <div class="mb-4">
+                <label class="label">یادداشت</label>
+                <textarea id="task-notes" class="input-field w-full" rows="2" 
+                          placeholder="توضیحات اضافی..."></textarea>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal()" class="btn-secondary">انصراف</button>
+                <button type="submit" class="btn-primary">💾 ذخیره</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// باز کردن modal اضافه
+function openAddModal() {
+    document.getElementById('modal-title').textContent = '➕ کار جدید';
+    document.getElementById('task-id').value = '';
+    document.getElementById('task-form').reset();
+    document.getElementById('task-modal').classList.remove('hidden');
+}
+
+// بستن modal
+function closeModal() {
+    document.getElementById('task-modal').classList.add('hidden');
+}
+
+// ویرایش
+async function editTask(taskId) {
+    try {
+        const response = await fetch('/api/tasks');
+        const data = await response.json();
+        const task = data.tasks.find(t => t.id === taskId);
+        
+        if (task) {
+            document.getElementById('modal-title').textContent = '✏️ ویرایش کار';
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-title').value = task.title || '';
+            document.getElementById('task-status').value = task.status || '';
+            document.getElementById('task-energy').value = task.energy || '';
+            document.getElementById('task-importance').value = task.importance || '';
+            document.getElementById('task-urgency').value = task.urgency || '';
+            document.getElementById('task-time').value = task.time || '';
+            document.getElementById('task-due').value = task.due_date || '';
+            document.getElementById('task-quickwin').checked = task.quick_win || false;
+            document.getElementById('task-notes').value = task.notes || '';
+            
+            // Context checkboxes
+            document.querySelectorAll('input[name="context"]').forEach(cb => {
+                cb.checked = (task.context || []).includes(cb.value);
+            });
+            
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+    } catch (error) {
+        showToast('خطا در بارگذاری', 'error');
+    }
+}
+
+// ارسال فرم
+async function submitTask(event) {
+    event.preventDefault();
+    
+    const taskId = document.getElementById('task-id').value;
+    const isEdit = !!taskId;
+    
+    // جمع‌آوری Context
+    const contexts = [];
+    document.querySelectorAll('input[name="context"]:checked').forEach(cb => {
+        contexts.push(cb.value);
+    });
+    
+    const data = {
+        title: document.getElementById('task-title').value,
+        status: document.getElementById('task-status').value,
+        energy: document.getElementById('task-energy').value,
+        importance: document.getElementById('task-importance').value,
+        urgency: document.getElementById('task-urgency').value,
+        time: document.getElementById('task-time').value,
+        due_date: document.getElementById('task-due').value || null,
+        quick_win: document.getElementById('task-quickwin').checked,
+        notes: document.getElementById('task-notes').value,
+        context: contexts
+    };
+    
+    try {
+        const url = isEdit ? `/api/tasks/${taskId}` : '/api/tasks';
+        const method = isEdit ? 'PATCH' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(isEdit ? 'بروزرسانی شد' : 'اضافه شد', 'success');
+            closeModal();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(result.error || 'خطا', 'error');
+        }
+    } catch (error) {
+        showToast('خطا در ارتباط', 'error');
+    }
+}
+
+// Done
+async function markDone(taskId) {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}/done`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('آفرین! ✅', 'success');
+            document.querySelector(`[data-id="${taskId}"]`)?.classList.add('opacity-50');
+            setTimeout(() => location.reload(), 500);
+        }
+    } catch (error) {
+        showToast('خطا', 'error');
+    }
+}
+
+// حذف
+async function deleteTask(taskId) {
+    if (!confirm('مطمئنی می‌خوای حذف کنی؟')) return;
+    
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('حذف شد', 'success');
+            document.querySelector(`[data-id="${taskId}"]`)?.remove();
+        }
+    } catch (error) {
+        showToast('خطا', 'error');
+    }
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+    if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        openAddModal();
+    }
+});
+</script>
+{% endblock %}

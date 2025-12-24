@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}🧠 داشبورد ADHD{% endblock %}</title>
+    
+    <!-- Vazir Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazir', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'q1': '#E74C3C',
+                        'q2': '#2ECC71',
+                        'q3': '#F39C12',
+                        'q4': '#95A5A6',
+                        'primary': '#4A90E2',
+                        'primary-dark': '#357ABD',
+                        'good': '#34A853',
+                        'bad': '#EA4335',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="font-vazir bg-gray-50 min-h-screen">
+    
+    <!-- نوار بالا -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- لوگو -->
+                <div class="flex items-center">
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2">
+                        <span class="text-2xl">🧠</span>
+                        <span class="font-bold text-gray-800 hidden sm:block">داشبورد ADHD</span>
+                        <span class="text-xs text-gray-400 hidden sm:block">v2.0</span>
+                    </a>
+                </div>
+                
+                <!-- منو - دسکتاپ -->
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="{{ url_for('dashboard') }}" 
+                       class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        🏠 خانه
+                    </a>
+                    <a href="{{ url_for('tasks_page') }}" 
+                       class="nav-link {% if request.endpoint == 'tasks_page' %}active{% endif %}">
+                        📋 کارها
+                    </a>
+                    <a href="{{ url_for('habits_page') }}" 
+                       class="nav-link {% if request.endpoint == 'habits_page' %}active{% endif %}">
+                        🎯 عادت‌ها
+                    </a>
+                    <a href="{{ url_for('import_page') }}" 
+                       class="nav-link {% if request.endpoint == 'import_page' %}active{% endif %}">
+                        📥 ورود داده
+                    </a>
+                    <a href="{{ url_for('analytics_page') }}" 
+                       class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}">
+                        📊 آمار
+                    </a>
+                    <a href="{{ url_for('settings_page') }}" 
+                       class="nav-link {% if request.endpoint == 'settings_page' %}active{% endif %}">
+                        ⚙️ تنظیمات
+                    </a>
+                </div>
+                
+                <!-- دکمه منو موبایل -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="p-2 rounded-lg hover:bg-gray-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- منو موبایل -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-4 py-2 space-y-1">
+                <a href="{{ url_for('dashboard') }}" class="mobile-nav-link">🏠 خانه</a>
+                <a href="{{ url_for('tasks_page') }}" class="mobile-nav-link">📋 کارها</a>
+                <a href="{{ url_for('habits_page') }}" class="mobile-nav-link">🎯 عادت‌ها</a>
+                <a href="{{ url_for('import_page') }}" class="mobile-nav-link">📥 ورود داده</a>
+                <a href="{{ url_for('analytics_page') }}" class="mobile-nav-link">📊 آمار</a>
+                <a href="{{ url_for('settings_page') }}" class="mobile-nav-link">⚙️ تنظیمات</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- پیام خطا -->
+    {% if error %}
+    <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+            {{ error }}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            {% for category, message in messages %}
+            <div class="mb-2 px-4 py-3 rounded-xl 
+                        {% if category == 'error' %}bg-red-50 border border-red-200 text-red-700
+                        {% elif category == 'success' %}bg-green-50 border border-green-200 text-green-700
+                        {% else %}bg-blue-50 border border-blue-200 text-blue-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- محتوای اصلی -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 left-4 z-50 space-y-2"></div>
+    
+    <!-- فوتر -->
+    <footer class="bg-white border-t mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-4 text-center text-gray-500 text-sm">
+            ساخته شده با 💜 برای ذهن‌های ADHD | نسخه 2.0
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+    
+    <script>
+        // منو موبایل
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>

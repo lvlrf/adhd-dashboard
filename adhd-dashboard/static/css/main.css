@@ -1,0 +1,289 @@
+/* ============================================
+   🧠 ADHD Dashboard v2.0 - Main Styles
+   ============================================ */
+
+/* Base */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Vazir', system-ui, sans-serif;
+    direction: rtl;
+}
+
+/* ============================================
+   Navigation
+   ============================================ */
+
+.nav-link {
+    @apply px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors text-sm font-medium;
+}
+
+.nav-link.active {
+    @apply bg-primary/10 text-primary;
+}
+
+.mobile-nav-link {
+    @apply block px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100;
+}
+
+/* ============================================
+   Cards
+   ============================================ */
+
+.card {
+    @apply bg-white rounded-2xl p-4 shadow-sm border border-gray-100;
+}
+
+.card-title {
+    @apply text-lg font-bold text-gray-800;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.btn-primary {
+    @apply px-4 py-2 bg-primary text-white rounded-xl font-medium hover:bg-primary-dark transition-colors;
+}
+
+.btn-secondary {
+    @apply px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors;
+}
+
+.btn-icon {
+    @apply p-2 rounded-lg hover:bg-gray-100 transition-colors;
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+
+.input-field {
+    @apply px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all;
+}
+
+.label {
+    @apply block text-sm font-medium text-gray-600 mb-1;
+}
+
+/* ============================================
+   Tags
+   ============================================ */
+
+.tag {
+    @apply text-xs px-2 py-0.5 rounded-full;
+}
+
+/* ============================================
+   Quadrants
+   ============================================ */
+
+.q1-bg { background-color: rgba(231, 76, 60, 0.05); }
+.q2-bg { background-color: rgba(46, 204, 113, 0.05); }
+.q3-bg { background-color: rgba(243, 156, 18, 0.05); }
+.q4-bg { background-color: rgba(149, 165, 166, 0.05); }
+
+.quadrant {
+    min-height: 200px;
+}
+
+/* ============================================
+   Task Cards
+   ============================================ */
+
+.task-card {
+    @apply bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer;
+}
+
+.task-checkbox {
+    @apply w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center text-transparent hover:border-green-500 hover:text-green-500 transition-colors text-sm;
+}
+
+.task-checkbox:hover {
+    border-color: #10B981;
+    color: #10B981;
+}
+
+/* ============================================
+   Modal
+   ============================================ */
+
+.modal {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    @apply absolute inset-0 bg-black/50;
+}
+
+.modal-content {
+    @apply relative bg-white rounded-2xl p-6 w-full max-h-[90vh] overflow-y-auto shadow-xl;
+}
+
+/* ============================================
+   Toast
+   ============================================ */
+
+.toast {
+    @apply px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2 animate-slide-up;
+}
+
+.toast.success {
+    @apply bg-green-500;
+}
+
+.toast.error {
+    @apply bg-red-500;
+}
+
+.toast.info {
+    @apply bg-blue-500;
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+}
+
+/* ============================================
+   Habit Card
+   ============================================ */
+
+.habit-card {
+    transition: all 0.2s ease;
+}
+
+.habit-card:hover {
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   Progress Circle
+   ============================================ */
+
+.progress-circle {
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+.card-enter {
+    animation: card-enter 0.3s ease-out;
+}
+
+@keyframes card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   Print
+   ============================================ */
+
+@media print {
+    nav, footer, .btn-primary, .btn-secondary, .modal {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+        break-inside: avoid;
+    }
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 640px) {
+    .card {
+        @apply rounded-xl p-3;
+    }
+    
+    .card-title {
+        @apply text-base;
+    }
+}
+
+/* ============================================
+   Custom Utilities
+   ============================================ */
+
+.truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-q1 { color: #E74C3C; }
+.text-q2 { color: #2ECC71; }
+.text-q3 { color: #F39C12; }
+.text-q4 { color: #95A5A6; }
+.text-good { color: #34A853; }
+.text-bad { color: #EA4335; }
+
+.bg-q1\/10 { background-color: rgba(231, 76, 60, 0.1); }
+.bg-q2\/10 { background-color: rgba(46, 204, 113, 0.1); }
+.bg-q3\/10 { background-color: rgba(243, 156, 18, 0.1); }
+.bg-q4\/10 { background-color: rgba(149, 165, 166, 0.1); }
+
+/* ============================================
+   Focus States
+   ============================================ */
+
+button:focus, a:focus, input:focus, select:focus, textarea:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: rgba(74, 144, 226, 0.3);
+}
+
+/* ============================================
+   Drop Zone
+   ============================================ */
+
+#drop-zone.dragover {
+    @apply border-primary bg-blue-50;
+}

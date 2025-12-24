@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}⚙️ تنظیمات{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">⚙️ تنظیمات</h1>
+    <p class="text-gray-500">مدیریت اتصالات و تنظیمات برنامه</p>
+</div>
+
+<!-- وضعیت اتصالات -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Notion -->
+    <div class="card">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">📝</span>
+            <div class="flex-1">
+                <h3 class="font-medium">Notion API</h3>
+                {% if config.notion_configured %}
+                <span class="text-green-500 text-sm">✅ متصل</span>
+                {% else %}
+                <span class="text-red-500 text-sm">❌ غیرفعال</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Google Sheets -->
+    <div class="card">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">📊</span>
+            <div class="flex-1">
+                <h3 class="font-medium">Google Sheets</h3>
+                {% if config.sheets_configured %}
+                <span class="text-green-500 text-sm">✅ متصل</span>
+                {% else %}
+                <span class="text-red-500 text-sm">❌ غیرفعال</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Telegram -->
+    <div class="card">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">📱</span>
+            <div class="flex-1">
+                <h3 class="font-medium">Telegram Bot</h3>
+                {% if config.telegram_configured %}
+                <span class="text-green-500 text-sm">✅ متصل</span>
+                {% else %}
+                <span class="text-gray-400 text-sm">⏳ فاز بعد</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✨ بخش جدید: Sync Notion Structure -->
+<div class="card mb-6">
+    <div class="flex items-center gap-2 mb-4">
+        <span class="text-2xl">🔄</span>
+        <h2 class="card-title">Sync Notion Structure</h2>
+    </div>
+    
+    <p class="text-gray-500 text-sm mb-4">
+        با آپلود فایل <code class="bg-gray-100 px-1 rounded">ADHD_Notion_Structure.md</code>، 
+        دیتابیس‌های Tasks، Projects، Resources، Daily Logs و Habits به صورت خودکار در Notion ساخته میشن.
+    </p>
+    
+    {% if not config.can_sync %}
+    <div class="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl mb-4">
+        ⚠️ برای Sync، باید <strong>Parent Page ID</strong> در فایل <code>.env</code> تنظیم شده باشه.
+        <details class="mt-2">
+            <summary class="cursor-pointer text-sm">راهنما</summary>
+            <ol class="mt-2 text-sm space-y-1 list-decimal list-inside">
+                <li>یک صفحه خالی در Notion بساز (مثلا "🧠 ADHD System")</li>
+                <li>صفحه رو با Integration شیر کن (... → Connections)</li>
+                <li>لینک صفحه رو کپی کن</li>
+                <li>32 کاراکتر آخر (قبل از ?) رو به عنوان NOTION_PARENT_PAGE_ID بذار</li>
+            </ol>
+        </details>
+    </div>
+    {% else %}
+    
+    <!-- فرم آپلود -->
+    <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center mb-4" 
+         id="drop-zone">
+        <input type="file" id="md-file" accept=".md,.txt" class="hidden" onchange="handleFileSelect(this)">
+        <div class="text-4xl mb-2">📄</div>
+        <p class="text-gray-600 mb-2">فایل MD رو بکش اینجا یا کلیک کن</p>
+        <button onclick="document.getElementById('md-file').click()" 
+                class="btn-secondary text-sm">
+            انتخاب فایل
+        </button>
+        <p class="text-xs text-gray-400 mt-2" id="file-name">فایلی انتخاب نشده</p>
+    </div>
+    
+    <!-- یا استفاده از ساختار پیش‌فرض -->
+    <div class="text-center mb-4">
+        <span class="text-gray-400 text-sm">یا</span>
+    </div>
+    
+    <div class="flex flex-col sm:flex-row gap-2 mb-4">
+        <button onclick="syncWithDefault()" class="btn-primary flex-1" id="sync-default-btn">
+            🚀 استفاده از ساختار پیش‌فرض
+        </button>
+        <button onclick="syncWithFile()" class="btn-secondary flex-1" id="sync-file-btn" disabled>
+            📄 Sync با فایل آپلود شده
+        </button>
+    </div>
+    
+    <!-- Progress -->
+    <div id="sync-progress" class="hidden mb-4">
+        <div class="flex items-center gap-2 mb-2">
+            <div class="animate-spin text-xl">⏳</div>
+            <span id="sync-status">در حال Sync...</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-primary h-2 rounded-full transition-all" id="progress-bar" style="width: 0%"></div>
+        </div>
+    </div>
+    
+    <!-- نتیجه -->
+    <div id="sync-result" class="hidden">
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+            <h4 class="font-medium text-green-700 mb-2">✅ Sync موفق!</h4>
+            <div id="sync-details"></div>
+        </div>
+    </div>
+    
+    {% endif %}
+</div>
+
+<!-- Database IDs -->
+<div class="card mb-6">
+    <h2 class="card-title mb-4">🗄️ Database IDs</h2>
+    
+    <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-gray-600">📋 Tasks</span>
+            <code class="text-sm bg-white px-2 py-1 rounded border">{{ config.tasks_db or 'تنظیم نشده' }}</code>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-gray-600">🎯 Habits</span>
+            <code class="text-sm bg-white px-2 py-1 rounded border">{{ config.habits_db or 'تنظیم نشده' }}</code>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span class="text-gray-600">📊 Daily Log Sheet</span>
+            <code class="text-sm bg-white px-2 py-1 rounded border">{{ config.daily_log_sheet or 'تنظیم نشده' }}</code>
+        </div>
+    </div>
+</div>
+
+<!-- راهنمای تنظیم -->
+<div class="card mb-6">
+    <h2 class="card-title mb-4">📖 راهنمای تنظیم</h2>
+    
+    <div class="space-y-4">
+        <!-- Notion -->
+        <details class="group">
+            <summary class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                <span>📝</span>
+                <span class="flex-1 font-medium">تنظیم Notion API</span>
+                <svg class="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </summary>
+            <div class="p-4 text-sm text-gray-600 space-y-2">
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>برو به <a href="https://www.notion.so/my-integrations" target="_blank" class="text-primary underline">notion.so/my-integrations</a></li>
+                    <li>کلیک روی <strong>New integration</strong></li>
+                    <li>نام: ADHD Dashboard</li>
+                    <li>Workspace خودت رو انتخاب کن</li>
+                    <li>توکن رو کپی کن و در <code>.env</code> بذار</li>
+                </ol>
+            </div>
+        </details>
+        
+        <!-- Google Sheets -->
+        <details class="group">
+            <summary class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                <span>📊</span>
+                <span class="flex-1 font-medium">تنظیم Google Sheets</span>
+                <svg class="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </summary>
+            <div class="p-4 text-sm text-gray-600 space-y-2">
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>برو به <a href="https://console.cloud.google.com" target="_blank" class="text-primary underline">Google Cloud Console</a></li>
+                    <li>یک پروژه جدید بساز</li>
+                    <li>Google Sheets API رو فعال کن</li>
+                    <li>Service Account بساز و JSON کلید بگیر</li>
+                    <li>فایل JSON رو کنار پروژه بذار</li>
+                    <li>Sheet رو با email سرویس اکانت Share کن</li>
+                </ol>
+            </div>
+        </details>
+        
+        <!-- ستون‌های Sheet -->
+        <details class="group">
+            <summary class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                <span>📋</span>
+                <span class="flex-1 font-medium">ستون‌های Google Sheet (12 ستون)</span>
+                <svg class="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </summary>
+            <div class="p-4 text-sm text-gray-600">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-right py-1">ستون</th>
+                            <th class="text-right py-1">نام</th>
+                            <th class="text-right py-1">توضیح</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>A</td><td>Date</td><td>تاریخ</td></tr>
+                        <tr><td>B</td><td>Mood</td><td>حال (1-10)</td></tr>
+                        <tr><td>C</td><td>Energy</td><td>انرژی (1-10)</td></tr>
+                        <tr><td>D</td><td>Top Win</td><td>بهترین کار</td></tr>
+                        <tr><td>E</td><td>Main Obstacle</td><td>مانع اصلی</td></tr>
+                        <tr><td>F</td><td>Techniques Suggested</td><td>تکنیک پیشنهادی</td></tr>
+                        <tr><td>G</td><td>Reflection</td><td>بازتاب</td></tr>
+                        <tr class="bg-green-50"><td>H</td><td>Techniques Used</td><td>✨ تکنیک استفاده شده</td></tr>
+                        <tr class="bg-green-50"><td>I</td><td>Bad Habits</td><td>✨ عادت‌های بد</td></tr>
+                        <tr class="bg-green-50"><td>J</td><td>Good Habits</td><td>✨ عادت‌های خوب</td></tr>
+                        <tr class="bg-green-50"><td>K</td><td>Desires</td><td>✨ خواسته‌ها</td></tr>
+                        <tr class="bg-green-50"><td>L</td><td>Daily Report</td><td>✨ گزارش روز</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+</div>
+
+<!-- لینک‌های مفید -->
+<div class="card">
+    <h2 class="card-title mb-4">🔗 لینک‌های مفید</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <a href="https://www.notion.so/my-integrations" target="_blank" 
+           class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+            <span>📝</span>
+            <span>Notion Integrations</span>
+            <span class="mr-auto text-gray-400">↗</span>
+        </a>
+        <a href="https://console.cloud.google.com" target="_blank"
+           class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+            <span>☁️</span>
+            <span>Google Cloud Console</span>
+            <span class="mr-auto text-gray-400">↗</span>
+        </a>
+        <a href="https://developers.notion.com" target="_blank"
+           class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+            <span>📚</span>
+            <span>Notion API Docs</span>
+            <span class="mr-auto text-gray-400">↗</span>
+        </a>
+        <a href="https://docs.gspread.org" target="_blank"
+           class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+            <span>📊</span>
+            <span>gspread Docs</span>
+            <span class="mr-auto text-gray-400">↗</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let uploadedFile = null;
+
+// Drag & Drop
+const dropZone = document.getElementById('drop-zone');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-primary', 'bg-blue-50');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-primary', 'bg-blue-50');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary', 'bg-blue-50');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect({ files: files });
+        }
+    });
+}
+
+// انتخاب فایل
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file && (file.name.endsWith('.md') || file.name.endsWith('.txt'))) {
+        uploadedFile = file;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('sync-file-btn').disabled = false;
+        showToast('فایل انتخاب شد', 'success');
+    } else {
+        showToast('فقط فایل MD یا TXT', 'error');
+    }
+}
+
+// Sync با فایل
+async function syncWithFile() {
+    if (!uploadedFile) {
+        showToast('فایلی انتخاب نشده', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', uploadedFile);
+    
+    await doSync(formData);
+}
+
+// Sync با ساختار پیش‌فرض
+async function syncWithDefault() {
+    await doSync(null);
+}
+
+// انجام Sync
+async function doSync(formData) {
+    const progressDiv = document.getElementById('sync-progress');
+    const resultDiv = document.getElementById('sync-result');
+    const progressBar = document.getElementById('progress-bar');
+    const statusText = document.getElementById('sync-status');
+    
+    progressDiv.classList.remove('hidden');
+    resultDiv.classList.add('hidden');
+    progressBar.style.width = '20%';
+    statusText.textContent = 'در حال آماده‌سازی...';
+    
+    try {
+        progressBar.style.width = '50%';
+        statusText.textContent = 'در حال ارتباط با Notion...';
+        
+        const options = {
+            method: 'POST'
+        };
+        
+        if (formData) {
+            options.body = formData;
+        } else {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = JSON.stringify({});
+        }
+        
+        const response = await fetch('/api/sync-notion', options);
+        const result = await response.json();
+        
+        progressBar.style.width = '100%';
+        
+        if (result.success) {
+            statusText.textContent = 'تکمیل شد!';
+            
+            let detailsHtml = '<ul class="list-disc list-inside text-sm space-y-1">';
+            
+            if (result.created.length > 0) {
+                detailsHtml += `<li class="text-green-600">ساخته شده: ${result.created.join(', ')}</li>`;
+            }
+            if (result.updated.length > 0) {
+                detailsHtml += `<li class="text-blue-600">بروزرسانی شده: ${result.updated.join(', ')}</li>`;
+            }
+            if (result.errors.length > 0) {
+                detailsHtml += `<li class="text-red-600">خطاها: ${result.errors.join(', ')}</li>`;
+            }
+            
+            detailsHtml += '</ul>';
+            
+            if (Object.keys(result.db_ids).length > 0) {
+                detailsHtml += '<div class="mt-3 p-2 bg-white rounded border text-xs">';
+                detailsHtml += '<strong>Database IDs (کپی کن در .env):</strong><br>';
+                for (const [name, id] of Object.entries(result.db_ids)) {
+                    detailsHtml += `NOTION_${name.toUpperCase()}_DB_ID=${id}<br>`;
+                }
+                detailsHtml += '</div>';
+            }
+            
+            document.getElementById('sync-details').innerHTML = detailsHtml;
+            resultDiv.classList.remove('hidden');
+            
+            showToast('Sync موفق! 🎉', 'success');
+            
+        } else {
+            statusText.textContent = 'خطا!';
+            showToast(result.error || 'خطا در Sync', 'error');
+        }
+        
+    } catch (error) {
+        statusText.textContent = 'خطا!';
+        showToast('خطا در ارتباط با سرور', 'error');
+        console.error(error);
+    }
+    
+    setTimeout(() => {
+        progressDiv.classList.add('hidden');
+    }, 2000);
+}
+</script>
+{% endblock %}

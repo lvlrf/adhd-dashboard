@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block title %}🎯 عادت‌ها{% endblock %}
+
+{% block content %}
+<!-- هدر -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">🎯 Habits Tracker</h1>
+        <p class="text-gray-500">ردیابی عادت‌های خوب و بد</p>
+    </div>
+    
+    <button onclick="openAddHabitModal()" class="btn-primary">
+        ➕ عادت جدید
+    </button>
+</div>
+
+{% if not habits_db_configured %}
+<div class="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl mb-6">
+    ⚠️ Habits Database تنظیم نشده. ابتدا از Settings، ساختار Notion رو Sync کن.
+    <a href="{{ url_for('settings_page') }}" class="underline">رفتن به تنظیمات</a>
+</div>
+{% endif %}
+
+<!-- آمار -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-blue-500">{{ stats.get('active', 0) }}</div>
+        <div class="text-sm text-gray-500">🎯 فعال</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-purple-500">{{ stats.get('longest_streak', 0) }}</div>
+        <div class="text-sm text-gray-500">🔥 بهترین Streak</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-good">{{ stats.get('achieved', 0) }}</div>
+        <div class="text-sm text-gray-500">🏆 موفق شده</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-orange-500">{{ stats.get('total_counter', 0) }}</div>
+        <div class="text-sm text-gray-500">📊 کل انجام</div>
+    </div>
+</div>
+
+<!-- فیلتر -->
+<div class="card mb-6">
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ url_for('habits_page', filter='all') }}" 
+           class="px-4 py-2 rounded-full text-sm font-medium transition
+                  {% if filter_type == 'all' %}bg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            همه
+        </a>
+        <a href="{{ url_for('habits_page', filter='good') }}"
+           class="px-4 py-2 rounded-full text-sm font-medium transition
+                  {% if filter_type == 'good' %}bg-good text-white{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %}">
+            🟢 عادت‌های خوب
+        </a>
+        <a href="{{ url_for('habits_page', filter='bad') }}"
+           class="px-4 py-2 rounded-full text-sm font-medium transition
+                  {% if filter_type == 'bad' %}bg-bad text-white{% else %}bg-red-100 text-red-700 hover:bg-red-200{% endif %}">
+            🔴 عادت‌های بد
+        </a>
+        <a href="{{ url_for('habits_page', filter='active') }}"
+           class="px-4 py-2 rounded-full text-sm font-medium transition
+                  {% if filter_type == 'active' %}bg-blue-500 text-white{% else %}bg-blue-100 text-blue-700 hover:bg-blue-200{% endif %}">
+            🎯 فعال
+        </a>
+    </div>
+</div>
+
+<!-- لیست عادت‌ها -->
+<div class="space-y-4" id="habits-list">
+    {% for habit in habits %}
+    <div class="card hover:shadow-md transition-shadow habit-card" data-id="{{ habit.id }}">
+        <div class="flex flex-col md:flex-row md:items-center gap-4">
+            <!-- آیکون نوع -->
+            <div class="flex items-center gap-3 md:w-1/3">
+                <span class="text-2xl">
+                    {% if habit.is_good %}🟢{% else %}🔴{% endif %}
+                </span>
+                <div>
+                    <h3 class="font-medium text-gray-800">{{ habit.name }}</h3>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {% if habit.category %}
+                        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{{ habit.category }}</span>
+                        {% endif %}
+                        {% if habit.frequency %}
+                        <span class="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full">{{ habit.frequency }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- آمار -->
+            <div class="flex items-center gap-6 md:w-1/3">
+                <div class="text-center">
+                    <div class="text-xl font-bold text-blue-500">{{ habit.counter }}</div>
+                    <div class="text-xs text-gray-400">🔢 Counter</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xl font-bold text-orange-500">{{ habit.streak }}</div>
+                    <div class="text-xs text-gray-400">🔥 Streak</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xl font-bold text-purple-500">{{ habit.best_streak }}</div>
+                    <div class="text-xs text-gray-400">🏆 Best</div>
+                </div>
+            </div>
+            
+            <!-- Progress و اکشن‌ها -->
+            <div class="flex items-center gap-3 md:w-1/3 justify-end">
+                <!-- Progress Circle -->
+                <div class="relative w-16 h-16">
+                    <svg class="w-full h-full transform -rotate-90">
+                        <circle cx="32" cy="32" r="28" stroke="#E5E7EB" stroke-width="4" fill="none"/>
+                        <circle cx="32" cy="32" r="28" 
+                                stroke="{% if habit.is_good %}#34A853{% else %}#EA4335{% endif %}" 
+                                stroke-width="4" fill="none"
+                                stroke-dasharray="176"
+                                stroke-dashoffset="{{ 176 - (habit.streak * 176 / max(habit.best_streak, 30, 1)) }}"
+                                stroke-linecap="round"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-sm font-bold">{{ habit.streak }}</span>
+                    </div>
+                </div>
+                
+                <!-- دکمه‌ها -->
+                <div class="flex flex-col gap-1">
+                    <button onclick="incrementHabit('{{ habit.id }}')" 
+                            class="btn-primary text-sm px-3 py-1">
+                        ✓ امروز
+                    </button>
+                    <button onclick="editHabit('{{ habit.id }}')" 
+                            class="btn-secondary text-sm px-3 py-1">
+                        ✏️ ویرایش
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trigger (اگه داره) -->
+        {% if habit.trigger %}
+        <div class="mt-3 p-2 bg-yellow-50 rounded-lg text-sm text-yellow-700">
+            ⚡ Trigger: {{ habit.trigger }}
+        </div>
+        {% endif %}
+        
+        <!-- Replacement (برای عادت بد) -->
+        {% if not habit.is_good and habit.replacement %}
+        <div class="mt-2 p-2 bg-green-50 rounded-lg text-sm text-green-700">
+            🔄 جایگزین: {{ habit.replacement }}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card text-center py-12">
+        <div class="text-5xl mb-4">🎯</div>
+        <h3 class="text-lg font-medium text-gray-600">عادتی پیدا نشد</h3>
+        <p class="text-gray-400 mt-1">یک عادت جدید اضافه کن</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal اضافه/ویرایش عادت -->
+<div id="habit-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeHabitModal()"></div>
+    <div class="modal-content max-w-lg">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold" id="habit-modal-title">➕ عادت جدید</h2>
+            <button onclick="closeHabitModal()" class="btn-icon">✕</button>
+        </div>
+        
+        <form id="habit-form" onsubmit="submitHabit(event)">
+            <input type="hidden" id="habit-id" value="">
+            
+            <!-- نام -->
+            <div class="mb-4">
+                <label class="label">نام عادت *</label>
+                <input type="text" id="habit-name" class="input-field w-full" 
+                       placeholder="مثال: ورزش صبحگاهی" required>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <!-- نوع -->
+                <div>
+                    <label class="label">نوع</label>
+                    <select id="habit-type" class="input-field w-full">
+                        {% for opt in habit_type_options %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- دسته‌بندی -->
+                <div>
+                    <label class="label">دسته‌بندی</label>
+                    <select id="habit-category" class="input-field w-full">
+                        {% for opt in habit_category_options %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- وضعیت -->
+                <div>
+                    <label class="label">وضعیت</label>
+                    <select id="habit-status" class="input-field w-full">
+                        {% for opt in habit_status_options %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- تکرار -->
+                <div>
+                    <label class="label">تکرار</label>
+                    <select id="habit-frequency" class="input-field w-full">
+                        {% for opt in habit_frequency_options %}
+                        <option value="{{ opt.name }}">{{ opt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Trigger -->
+            <div class="mb-4">
+                <label class="label">محرک (Trigger)</label>
+                <input type="text" id="habit-trigger" class="input-field w-full"
+                       placeholder="وقتی که... این عادت فعال میشه">
+            </div>
+            
+            <!-- Replacement (برای عادت بد) -->
+            <div class="mb-4" id="replacement-field">
+                <label class="label">عادت جایگزین (برای عادت بد)</label>
+                <input type="text" id="habit-replacement" class="input-field w-full"
+                       placeholder="به جای این عادت بد، چیکار کنم؟">
+            </div>
+            
+            <!-- چرا مهمه -->
+            <div class="mb-4">
+                <label class="label">چرا این عادت مهمه؟</label>
+                <textarea id="habit-why" class="input-field w-full" rows="2"
+                          placeholder="انگیزه‌ات برای این عادت"></textarea>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeHabitModal()" class="btn-secondary">انصراف</button>
+                <button type="submit" class="btn-primary">💾 ذخیره</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// باز کردن modal اضافه
+function openAddHabitModal() {
+    document.getElementById('habit-modal-title').textContent = '➕ عادت جدید';
+    document.getElementById('habit-id').value = '';
+    document.getElementById('habit-form').reset();
+    document.getElementById('habit-modal').classList.remove('hidden');
+}
+
+// بستن modal
+function closeHabitModal() {
+    document.getElementById('habit-modal').classList.add('hidden');
+}
+
+// ویرایش عادت
+async function editHabit(habitId) {
+    try {
+        const response = await fetch('/api/habits');
+        const data = await response.json();
+        const habit = data.habits.find(h => h.id === habitId);
+        
+        if (habit) {
+            document.getElementById('habit-modal-title').textContent = '✏️ ویرایش عادت';
+            document.getElementById('habit-id').value = habit.id;
+            document.getElementById('habit-name').value = habit.name || '';
+            document.getElementById('habit-type').value = habit.type || '';
+            document.getElementById('habit-category').value = habit.category || '';
+            document.getElementById('habit-status').value = habit.status || '';
+            document.getElementById('habit-frequency').value = habit.frequency || '';
+            document.getElementById('habit-trigger').value = habit.trigger || '';
+            document.getElementById('habit-replacement').value = habit.replacement || '';
+            document.getElementById('habit-why').value = habit.why || '';
+            
+            document.getElementById('habit-modal').classList.remove('hidden');
+        }
+    } catch (error) {
+        showToast('خطا در بارگذاری', 'error');
+    }
+}
+
+// ارسال فرم
+async function submitHabit(event) {
+    event.preventDefault();
+    
+    const habitId = document.getElementById('habit-id').value;
+    const isEdit = !!habitId;
+    
+    const data = {
+        name: document.getElementById('habit-name').value,
+        type: document.getElementById('habit-type').value,
+        category: document.getElementById('habit-category').value,
+        status: document.getElementById('habit-status').value,
+        frequency: document.getElementById('habit-frequency').value,
+        trigger: document.getElementById('habit-trigger').value,
+        replacement: document.getElementById('habit-replacement').value,
+        why: document.getElementById('habit-why').value
+    };
+    
+    try {
+        const url = isEdit ? `/api/habits/${habitId}` : '/api/habits';
+        const method = isEdit ? 'PATCH' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(isEdit ? 'بروزرسانی شد' : 'اضافه شد', 'success');
+            closeHabitModal();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(result.error || 'خطا', 'error');
+        }
+    } catch (error) {
+        showToast('خطا در ارتباط', 'error');
+    }
+}
+
+// افزایش Counter
+async function incrementHabit(habitId) {
+    try {
+        const response = await fetch(`/api/habits/${habitId}/increment`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`آفرین! 🎉 Streak: ${result.habit.streak}`, 'success');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(result.error || 'خطا', 'error');
+        }
+    } catch (error) {
+        showToast('خطا', 'error');
+    }
+}
+
+// نمایش/پنهان کردن فیلد Replacement بر اساس نوع
+document.getElementById('habit-type')?.addEventListener('change', function() {
+    const replacementField = document.getElementById('replacement-field');
+    if (this.value.includes('بد') || this.value.includes('🔴')) {
+        replacementField.style.display = 'block';
+    } else {
+        replacementField.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
