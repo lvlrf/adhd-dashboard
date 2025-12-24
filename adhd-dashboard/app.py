@@ -1,11 +1,13 @@
 """
-🧠 ADHD Task Dashboard - نسخه 2.0
+🧠 ADHD Task Dashboard - نسخه 3.0
+Dark Mode + Glassmorphism + Gamification
 شامل:
 - Dashboard با ماتریس آیزنهاور
-- مدیریت Tasks
-- Habits Tracker (جدید)
-- Sync Notion Structure (جدید)
-- Analytics با نمودارهای جدید
+- مدیریت Tasks با Kanban
+- Habits Tracker
+- Focus Mode (Zen)
+- Smart Sheet Creator
+- Sync Notion Structure
 """
 
 import os
@@ -24,6 +26,8 @@ from werkzeug.utils import secure_filename
 from config import get_config, Config
 from utils.notion_api import NotionAPI
 from utils.sheets_api import create_sheets_api
+from services.sheet_service import create_sheet_service
+from services.db_service import create_database_service
 
 # بارگذاری متغیرهای محیطی
 load_dotenv()
@@ -50,24 +54,37 @@ app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB
 # آبجکت‌های API
 notion_api = None
 sheets_api = None
+sheet_service = None
+db_service = None
 
 
 def init_apis():
-    """اولیه‌سازی API ها"""
-    global notion_api, sheets_api
+    """اولیه‌سازی API ها و سرویس‌ها"""
+    global notion_api, sheets_api, sheet_service, db_service
     
+    # Database Service (SQLite)
+    db_service = create_database_service(Config.DATABASE_PATH)
+    logger.info("Database Service آماده است")
+    
+    # Notion API
     if Config.is_notion_configured():
         notion_api = NotionAPI(Config.NOTION_API_KEY)
         logger.info("Notion API آماده است")
     else:
         logger.warning("Notion API تنظیم نشده")
     
+    # Google Sheets API
     if Config.is_sheets_configured():
         sheets_api = create_sheets_api(Config.GOOGLE_SHEETS_CREDENTIALS)
         if sheets_api:
             logger.info("Google Sheets API آماده است")
     else:
         logger.warning("Google Sheets API تنظیم نشده")
+    
+    # Sheet Service (برای Smart Create)
+    sheet_service = create_sheet_service(Config.GOOGLE_SHEETS_CREDENTIALS)
+    if sheet_service:
+        logger.info("Sheet Service آماده است")
 
 
 def api_required(f):
@@ -538,6 +555,64 @@ def api_sync_notion():
 
 
 # ============================================
+# API Routes - Smart Sheet Creator
+# ============================================
+
+@app.route('/api/sheets/create', methods=['POST'])
+def api_create_sheet():
+    """ساخت Google Sheet با ساختار کامل"""
+    if not sheet_service:
+        return jsonify({"error": "Sheet Service در دسترس نیست"}), 503
+    
+    try:
+        # دریافت عنوان اختیاری
+        data = request.get_json() or {}
+        title = data.get('title')
+        
+        # ساخت Sheet
+        result = sheet_service.create_and_setup_sheet(
+            title=title,
+            on_progress=lambda msg, pct: logger.info(f"[{pct}%] {msg}")
+        )
+        
+        if result['success']:
+            # ذخیره Sheet ID در تنظیمات
+            if db_service:
+                db_service.set_setting('sheets_id', result['spreadsheet_id'])
+                db_service.set_setting('sheets_connected', 'true')
+            
+            return jsonify({
+                "success": True,
+                "spreadsheet_id": result['spreadsheet_id'],
+                "spreadsheet_url": result['spreadsheet_url'],
+                "title": result['title']
+            })
+        else:
+            return jsonify({"error": "خطا در ساخت Sheet"}), 500
+            
+    except Exception as e:
+        logger.error(f"خطا در ساخت Sheet: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/sheets/status')
+def api_sheet_status():
+    """بررسی وضعیت اتصال Sheet"""
+    sheet_id = None
+    
+    if db_service:
+        sheet_id = db_service.get_setting('sheets_id')
+    
+    if not sheet_id:
+        sheet_id = Config.DAILY_LOG_SHEET_ID
+    
+    return jsonify({
+        "connected": bool(sheet_id),
+        "sheet_id": sheet_id[:8] + '...' if sheet_id else None
+    })
+
+
+# ============================================
 # API Routes - Google Sheets
 # ============================================
 
@@ -661,7 +736,8 @@ if __name__ == '__main__':
     port = Config.FLASK_PORT
     debug = Config.DEBUG
     
-    logger.info(f"🧠 ADHD Dashboard v2.0 شروع شد")
+    logger.info(f"🧠 ADHD Dashboard v3.0 شروع شد")
     logger.info(f"📍 آدرس: http://localhost:{port}")
+    logger.info(f"🌙 Dark Mode + Glassmorphism")
     
     app.run(host='0.0.0.0', port=port, debug=debug)

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" x-data="{ darkMode: true }" :class="darkMode ? 'dark' : ''">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}🧠 داشبورد ADHD{% endblock %}</title>
     
     <!-- Vazir Font -->
@@ -11,12 +11,22 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <!-- SortableJS for Drag & Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
     <!-- Tailwind Config -->
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -27,10 +37,11 @@
                         'q2': '#2ECC71',
                         'q3': '#F39C12',
                         'q4': '#95A5A6',
-                        'primary': '#4A90E2',
-                        'primary-dark': '#357ABD',
-                        'good': '#34A853',
-                        'bad': '#EA4335',
+                        'primary': '#6366F1',
+                        'primary-dark': '#4F46E5',
+                        'good': '#10B981',
+                        'bad': '#EF4444',
+                        'accent': '#8B5CF6',
                     }
                 }
             }
@@ -38,27 +49,27 @@
     </script>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     {% block head %}{% endblock %}
 </head>
-<body class="font-vazir bg-gray-50 min-h-screen">
+<body class="font-vazir bg-slate-900 text-slate-200 min-h-screen pb-20 md:pb-0"
     
-    <!-- نوار بالا -->
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
+    <!-- نوار بالا (Desktop) -->
+    <nav class="hidden md:block bg-slate-800/50 backdrop-blur-xl border-b border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- لوگو -->
                 <div class="flex items-center">
                     <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2">
                         <span class="text-2xl">🧠</span>
-                        <span class="font-bold text-gray-800 hidden sm:block">داشبورد ADHD</span>
-                        <span class="text-xs text-gray-400 hidden sm:block">v2.0</span>
+                        <span class="font-bold text-white hidden sm:block">داشبورد ADHD</span>
+                        <span class="text-xs text-slate-400 hidden sm:block">v3.0</span>
                     </a>
                 </div>
                 
                 <!-- منو - دسکتاپ -->
-                <div class="hidden md:flex items-center gap-1">
+                <div class="flex items-center gap-1">
                     <a href="{{ url_for('dashboard') }}" 
                        class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
                         🏠 خانه
@@ -71,10 +82,6 @@
                        class="nav-link {% if request.endpoint == 'habits_page' %}active{% endif %}">
                         🎯 عادت‌ها
                     </a>
-                    <a href="{{ url_for('import_page') }}" 
-                       class="nav-link {% if request.endpoint == 'import_page' %}active{% endif %}">
-                        📥 ورود داده
-                    </a>
                     <a href="{{ url_for('analytics_page') }}" 
                        class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}">
                         📊 آمار
@@ -83,31 +90,28 @@
                        class="nav-link {% if request.endpoint == 'settings_page' %}active{% endif %}">
                         ⚙️ تنظیمات
                     </a>
-                </div>
-                
-                <!-- دکمه منو موبایل -->
-                <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="p-2 rounded-lg hover:bg-gray-100">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
+                    
+                    <!-- Focus Mode Button -->
+                    <button onclick="openFocusMode()" class="mr-2 px-3 py-2 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition">
+                        🧘 Focus
                     </button>
                 </div>
             </div>
         </div>
-        
-        <!-- منو موبایل -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
-            <div class="px-4 py-2 space-y-1">
-                <a href="{{ url_for('dashboard') }}" class="mobile-nav-link">🏠 خانه</a>
-                <a href="{{ url_for('tasks_page') }}" class="mobile-nav-link">📋 کارها</a>
-                <a href="{{ url_for('habits_page') }}" class="mobile-nav-link">🎯 عادت‌ها</a>
-                <a href="{{ url_for('import_page') }}" class="mobile-nav-link">📥 ورود داده</a>
-                <a href="{{ url_for('analytics_page') }}" class="mobile-nav-link">📊 آمار</a>
-                <a href="{{ url_for('settings_page') }}" class="mobile-nav-link">⚙️ تنظیمات</a>
-            </div>
-        </div>
     </nav>
+    
+    <!-- موبایل هدر -->
+    <header class="md:hidden bg-slate-800/50 backdrop-blur-xl border-b border-slate-700 sticky top-0 z-50">
+        <div class="flex items-center justify-between px-4 h-14">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2">
+                <span class="text-xl">🧠</span>
+                <span class="font-bold text-white">ADHD</span>
+            </a>
+            <button onclick="openFocusMode()" class="p-2 bg-accent/20 text-accent rounded-lg">
+                🧘
+            </button>
+        </div>
+    </header>
     
     <!-- پیام خطا -->
     {% if error %}
@@ -140,24 +144,93 @@
     </main>
     
     <!-- Toast Container -->
-    <div id="toast-container" class="fixed bottom-4 left-4 z-50 space-y-2"></div>
+    <div id="toast-container" class="fixed bottom-20 md:bottom-4 left-4 z-50 space-y-2"></div>
     
-    <!-- فوتر -->
-    <footer class="bg-white border-t mt-auto">
-        <div class="max-w-7xl mx-auto px-4 py-4 text-center text-gray-500 text-sm">
-            ساخته شده با 💜 برای ذهن‌های ADHD | نسخه 2.0
+    <!-- Bottom Navigation (Mobile Only) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800/90 backdrop-blur-xl border-t border-slate-700 z-50">
+        <div class="flex justify-around items-center h-16">
+            <a href="{{ url_for('dashboard') }}" 
+               class="bottom-nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <span class="text-xl">🏠</span>
+                <span class="text-xs">خانه</span>
+            </a>
+            <a href="{{ url_for('tasks_page') }}" 
+               class="bottom-nav-item {% if request.endpoint == 'tasks_page' %}active{% endif %}">
+                <span class="text-xl">📋</span>
+                <span class="text-xs">کارها</span>
+            </a>
+            <button onclick="openFocusMode()" class="bottom-nav-item focus-btn">
+                <span class="text-2xl">🧘</span>
+            </button>
+            <a href="{{ url_for('habits_page') }}" 
+               class="bottom-nav-item {% if request.endpoint == 'habits_page' %}active{% endif %}">
+                <span class="text-xl">🎯</span>
+                <span class="text-xs">عادت‌ها</span>
+            </a>
+            <a href="{{ url_for('settings_page') }}" 
+               class="bottom-nav-item {% if request.endpoint == 'settings_page' %}active{% endif %}">
+                <span class="text-xl">⚙️</span>
+                <span class="text-xs">تنظیمات</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Focus Mode Modal (Zen Mode) -->
+    <div id="focus-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-slate-900/95 backdrop-blur-xl"></div>
+        <div class="relative h-full flex flex-col items-center justify-center p-6 text-center">
+            <!-- Close Button -->
+            <button onclick="closeFocusMode()" class="absolute top-4 left-4 p-3 text-slate-400 hover:text-white transition">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            
+            <!-- Focus Content -->
+            <div class="max-w-lg w-full">
+                <div class="text-6xl mb-6">🎯</div>
+                <h2 class="text-2xl font-bold text-white mb-2">Focus Mode</h2>
+                <p class="text-slate-400 mb-8">روی یک کار تمرکز کن</p>
+                
+                <!-- Priority Task -->
+                <div id="focus-task" class="glass-card p-6 mb-8">
+                    <h3 id="focus-task-title" class="text-xl font-medium text-white mb-2">در حال بارگذاری...</h3>
+                    <p id="focus-task-category" class="text-slate-400 text-sm"></p>
+                </div>
+                
+                <!-- Pomodoro Timer -->
+                <div class="mb-8">
+                    <div id="timer-display" class="text-6xl font-mono text-primary mb-4">25:00</div>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="startTimer()" id="timer-start" class="btn-primary px-6">
+                            ▶️ شروع
+                        </button>
+                        <button onclick="pauseTimer()" id="timer-pause" class="btn-secondary px-6 hidden">
+                            ⏸️ توقف
+                        </button>
+                        <button onclick="resetTimer()" class="btn-secondary px-6">
+                            ↻ ریست
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Done Button -->
+                <button onclick="completeFocusTask()" class="w-full py-4 bg-good text-white rounded-2xl text-xl font-bold hover:bg-good/90 transition transform hover:scale-105">
+                    ✅ انجام شد!
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- فوتر (Desktop) -->
+    <footer class="hidden md:block bg-slate-800/50 border-t border-slate-700 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-4 text-center text-slate-500 text-sm">
+            ساخته شده با 💜 برای ذهن‌های ADHD | نسخه 3.0
         </div>
     </footer>
     
     <!-- Scripts -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     {% block scripts %}{% endblock %}
-    
-    <script>
-        // منو موبایل
-        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
-            document.getElementById('mobile-menu').classList.toggle('hidden');
-        });
-    </script>
 </body>
 </html>

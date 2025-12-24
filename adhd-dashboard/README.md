@@ -1,4 +1,4 @@
-# 🧠 ADHD Task Dashboard v2.0
+# 🧠 ADHD Task Dashboard v3.1
 
 داشبورد مدیریت کارها و عادت‌ها، بهینه‌شده برای ذهن‌های ADHD
 
@@ -6,29 +6,37 @@
 ![Flask](https://img.shields.io/badge/Flask-3.0-green)
 ![Notion](https://img.shields.io/badge/Notion-API-black)
 
-## ✨ امکانات نسخه 2.0
+## ✨ امکانات نسخه 3.1
 
 ### 🔥 قابلیت‌های اصلی
 - **ماتریس آیزنهاور** - دسته‌بندی کارها (بحران، رشد، مزاحمت، اتلاف)
-- **Habits Tracker** 🆕 - ردیابی عادت‌های خوب و بد با Streak
-- **Sync Notion Structure** 🆕 - ساخت خودکار Database ها از فایل MD
-- **Import از Gem** - ورود Task ها از JSON
-- **5 Database Notion** - Tasks, Projects, Resources, Daily Logs, Habits
+- **Habits Tracker** - ردیابی عادت‌های خوب و بد با Streak
+- **Sync Notion Structure** - ساخت خودکار Database ها از فایل MD
+- **Smart Sheet Creator** 🆕 - ساخت Google Sheet با یک کلیک
+- **Focus Mode (Zen)** 🆕 - تمرکز روی یک کار + Pomodoro Timer
+- **Gamification** 🆕 - جشن Confetti هنگام تکمیل کار!
 
-### 📊 نمودارهای جدید
-- Bad Habits Frequency (Bar Chart)
-- Good Habits Streak (Line Chart)
-- Techniques Usage (Pie Chart)
-- Mood & Energy Trend
+### 🌙 UI/UX جدید
+- **Dark Mode** - تم تاریک با گرادیان‌های زیبا
+- **Glassmorphism** - کارت‌ها با افکت شیشه‌ای
+- **Bottom Navigation** - منوی پایین برای موبایل
+- **Kanban View** 🆕 - Drag & Drop برای Task ها
 
-### 📈 Google Sheets (12 ستون)
-- Date, Mood, Energy, Top Win, Main Obstacle
-- Techniques Suggested, Reflection
-- **Techniques Used** 🆕
-- **Bad Habits** 🆕
-- **Good Habits** 🆕
-- **Desires** 🆕
-- **Daily Report** 🆕
+### 📊 Google Sheets
+- **5 Tab کامل** - Daily Log, Brain Dump, Habits, Projects, Analytics
+- **Conditional Formatting** - رنگ‌بندی خودکار
+- **Data Validation** - Dropdown ها
+- **Formulas** - محاسبات خودکار
+
+### 📋 دسته‌بندی‌های سفارشی
+**عمومی:**
+- تماس‌ها، لیست خرید، کارهای خرد شخصی، کارهای شخصی، کارهای هنگامه
+
+**روند پروژه:**
+- پیگیری‌ها → جلسه/بازدید → پیش‌فاکتور → تایید پرداخت → دریافت تجهیزات → انجام پروژه → تحویل پروژه → رضایت‌نامه → گارانتی
+
+**سایر:**
+- آموزش، پروژه عقب‌مانده، تعمیرات، ایده درآمدزایی
 
 ---
 
@@ -245,78 +253,6 @@ server {
 - `credentials.json` کنار app.py هست؟
 - Sheet با email سرویس اکانت شیر شده؟
 
----
-اجرا بدون nginx
-1) مطمئن شو venv وجود دارد
-
-داخل همین مسیر:
-
-cd /root/adhd-dashboard
-python3 -m venv venv
-source venv/bin/activate
-pip install -U pip
-pip install -r requirements.txt
-which gunicorn
-deactivate
-
-2) ساخت سرویسsystemd
-خروجی باید چیزی شبیه این باشد:
-/root/adhd-dashboard/.venv/bin/gunicorn
-
-قدم 2) فایل سرویس را اصلاح کن (مبنای /root و .venv)
-
-این فایل را باز کن:
-
-nano /etc/systemd/system/adhd-dashboard.service
-
-
-و این را دقیقاً جایگزین کن (بدون Nginx):
-
-[Unit]
-Description=ADHD Dashboard (Gunicorn)
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/root/adhd-dashboard
-
-Environment="PYTHONUNBUFFERED=1"
-Environment="PORT=5010"
-EnvironmentFile=-/root/adhd-dashboard/.env
-
-ExecStart=/root/adhd-dashboard/.venv/bin/gunicorn --bind 0.0.0.0:5010 --workers 2 --threads 4 --timeout 60 app:app
-
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-
-
-نکته: من همه چیز را یک‌خطی گذاشتم که systemd با backslash و line continuation درگیر نشود.
-
-قدم 3) Reload و Restart
-
-بعد:
-
-systemctl daemon-reload
-systemctl restart adhd-dashboard
-systemctl status adhd-dashboard --no-pager
-
-
-اگر درست شده باشد باید Active: active (running) ببینی.
-
-قدم 4) تست پورت
-
-بعد:
-
-ss -lntp | grep 5010
-curl -I http://127.0.0.1:5010
-
-
-
----
 ---
 
 ## 📝 لایسنس

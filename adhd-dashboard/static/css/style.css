@@ -1,0 +1,496 @@
+/* ============================================
+   🧠 ADHD Dashboard v3.0 - Dark Glassmorphism
+   ============================================ */
+
+/* Variables */
+:root {
+    --color-primary: #6366F1;
+    --color-primary-dark: #4F46E5;
+    --color-accent: #8B5CF6;
+    --color-good: #10B981;
+    --color-bad: #EF4444;
+    --color-warning: #F59E0B;
+    
+    --glass-bg: rgba(30, 41, 59, 0.5);
+    --glass-border: rgba(71, 85, 105, 0.5);
+    --glass-blur: 12px;
+    
+    --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+    --radius: 1rem;
+}
+
+/* Base */
+body {
+    font-family: 'Vazir', system-ui, -apple-system, sans-serif;
+    direction: rtl;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+    min-height: 100vh;
+}
+
+/* ============================================
+   Navigation
+   ============================================ */
+
+.nav-link {
+    @apply px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition text-sm font-medium;
+}
+
+.nav-link.active {
+    @apply bg-primary/20 text-primary;
+}
+
+/* Bottom Navigation */
+.bottom-nav-item {
+    @apply flex flex-col items-center justify-center gap-0.5 text-slate-400 transition py-2 px-3;
+}
+
+.bottom-nav-item.active {
+    @apply text-primary;
+}
+
+.bottom-nav-item.focus-btn {
+    @apply -mt-6 bg-accent w-14 h-14 rounded-full text-white shadow-lg shadow-accent/30;
+}
+
+/* ============================================
+   Glass Cards
+   ============================================ */
+
+.card, .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+
+.card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: var(--shadow-glow);
+}
+
+.card-title {
+    @apply text-lg font-bold text-white flex items-center gap-2;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.btn-primary {
+    @apply px-4 py-2 bg-primary text-white rounded-xl font-medium 
+           hover:bg-primary-dark transition shadow-lg shadow-primary/20
+           disabled:opacity-50 disabled:cursor-not-allowed
+           active:scale-95;
+}
+
+.btn-secondary {
+    @apply px-4 py-2 bg-slate-700 text-slate-200 rounded-xl font-medium
+           hover:bg-slate-600 transition border border-slate-600
+           active:scale-95;
+}
+
+.btn-icon {
+    @apply p-2 rounded-xl hover:bg-slate-700/50 transition text-slate-400 hover:text-white;
+}
+
+.btn-success {
+    @apply px-4 py-2 bg-good text-white rounded-xl font-medium
+           hover:bg-good/90 transition shadow-lg shadow-good/20;
+}
+
+.btn-danger {
+    @apply px-4 py-2 bg-bad text-white rounded-xl font-medium
+           hover:bg-bad/90 transition;
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+
+.label {
+    @apply block text-sm font-medium text-slate-300 mb-1;
+}
+
+.input-field {
+    @apply w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl
+           text-white placeholder-slate-500
+           focus:ring-2 focus:ring-primary/50 focus:border-primary
+           outline-none transition;
+}
+
+select.input-field {
+    @apply cursor-pointer;
+}
+
+/* ============================================
+   Task Components
+   ============================================ */
+
+.task-checkbox {
+    @apply w-7 h-7 rounded-full border-2 border-slate-500 
+           flex items-center justify-center
+           text-transparent hover:border-good hover:text-good hover:bg-good/10
+           transition cursor-pointer shrink-0;
+}
+
+.task-checkbox.checked {
+    @apply bg-good border-good text-white;
+}
+
+.task-card {
+    @apply p-3 bg-slate-800/30 rounded-xl border border-slate-700/50
+           hover:border-primary/30 hover:bg-slate-800/50
+           transition cursor-pointer;
+}
+
+.task-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Kanban */
+.kanban-column {
+    @apply bg-slate-800/30 rounded-2xl p-3 min-h-[300px];
+}
+
+.kanban-column-header {
+    @apply text-sm font-bold text-slate-300 mb-3 flex items-center gap-2;
+}
+
+.kanban-item {
+    @apply p-3 bg-slate-700/50 rounded-xl mb-2 cursor-grab
+           border border-slate-600/50 hover:border-primary/30
+           transition;
+}
+
+.kanban-item.sortable-ghost {
+    @apply opacity-50 bg-primary/20;
+}
+
+.kanban-item.sortable-drag {
+    @apply shadow-2xl shadow-primary/20;
+}
+
+/* ============================================
+   Habit Components
+   ============================================ */
+
+.habit-card {
+    @apply glass-card hover:border-primary/30;
+    animation: slideIn 0.3s ease-out;
+}
+
+.streak-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold;
+}
+
+.streak-badge.fire {
+    @apply bg-orange-500/20 text-orange-400;
+}
+
+/* ============================================
+   Tags & Badges
+   ============================================ */
+
+.tag {
+    @apply text-xs px-2.5 py-1 rounded-lg font-medium;
+}
+
+.tag-red { @apply bg-red-500/20 text-red-400; }
+.tag-green { @apply bg-green-500/20 text-green-400; }
+.tag-yellow { @apply bg-yellow-500/20 text-yellow-400; }
+.tag-blue { @apply bg-blue-500/20 text-blue-400; }
+.tag-purple { @apply bg-purple-500/20 text-purple-400; }
+.tag-gray { @apply bg-slate-600/50 text-slate-400; }
+
+/* Quadrant Tags */
+.quadrant-1 { @apply bg-red-500/20 text-red-400 border border-red-500/30; }
+.quadrant-2 { @apply bg-green-500/20 text-green-400 border border-green-500/30; }
+.quadrant-3 { @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30; }
+.quadrant-4 { @apply bg-slate-600/50 text-slate-400 border border-slate-500/30; }
+
+/* ============================================
+   Quadrant Backgrounds (Eisenhower)
+   ============================================ */
+
+.q1-bg { 
+    @apply bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20; 
+}
+.q2-bg { 
+    @apply bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20; 
+}
+.q3-bg { 
+    @apply bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20; 
+}
+.q4-bg { 
+    @apply bg-gradient-to-br from-slate-500/10 to-slate-600/5 border-slate-500/20; 
+}
+
+/* ============================================
+   Modal
+   ============================================ */
+
+.modal {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    @apply absolute inset-0 bg-black/70 backdrop-blur-sm;
+}
+
+.modal-content {
+    @apply relative bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl 
+           p-6 w-full max-h-[90vh] overflow-y-auto;
+    animation: modalIn 0.2s ease-out;
+}
+
+/* ============================================
+   Toast Notifications
+   ============================================ */
+
+.toast {
+    @apply px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-medium
+           backdrop-blur-xl border;
+    animation: toastIn 0.3s ease-out;
+}
+
+.toast-success { 
+    @apply bg-good/90 border-good/50; 
+}
+.toast-error { 
+    @apply bg-bad/90 border-bad/50; 
+}
+.toast-info { 
+    @apply bg-primary/90 border-primary/50; 
+}
+.toast-warning { 
+    @apply bg-warning/90 border-warning/50 text-slate-900; 
+}
+
+/* ============================================
+   Progress Bar
+   ============================================ */
+
+.progress-bar {
+    @apply h-2 bg-slate-700 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+    @apply h-full bg-gradient-to-r from-primary to-accent transition-all duration-500;
+}
+
+/* Progress Circle */
+.progress-circle {
+    @apply relative w-16 h-16;
+}
+
+.progress-circle svg {
+    transform: rotate(-90deg);
+}
+
+/* ============================================
+   Stats Cards
+   ============================================ */
+
+.stat-card {
+    @apply glass-card text-center p-4;
+}
+
+.stat-value {
+    @apply text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+}
+
+.stat-label {
+    @apply text-sm text-slate-400 mt-1;
+}
+
+/* ============================================
+   Charts
+   ============================================ */
+
+.chart-container {
+    @apply relative w-full bg-slate-800/30 rounded-xl p-4;
+    height: 300px;
+}
+
+/* ============================================
+   File Upload
+   ============================================ */
+
+.file-upload {
+    @apply border-2 border-dashed border-slate-600 rounded-2xl p-8 text-center
+           hover:border-primary hover:bg-primary/5 transition cursor-pointer;
+}
+
+.file-upload.dragover {
+    @apply border-primary bg-primary/10;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.empty-state {
+    @apply text-center py-12;
+}
+
+.empty-state-icon {
+    @apply text-5xl mb-4 opacity-50;
+}
+
+.empty-state-title {
+    @apply text-lg font-medium text-slate-400;
+}
+
+.empty-state-text {
+    @apply text-slate-500 mt-1;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); 
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); 
+    }
+}
+
+@keyframes confetti-fall {
+    0% { transform: translateY(-100vh) rotate(0deg); }
+    100% { transform: translateY(100vh) rotate(720deg); }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 640px) {
+    .card {
+        @apply p-3;
+    }
+    
+    .modal-content {
+        @apply p-4 mx-2 rounded-2xl;
+    }
+    
+    .stat-value {
+        @apply text-2xl;
+    }
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+    nav, footer, .btn-primary, .btn-secondary, .btn-icon, 
+    .bottom-nav-item, #focus-modal {
+        display: none !important;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .card {
+        background: white;
+        border: 1px solid #ddd;
+        box-shadow: none;
+    }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.glow-primary {
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+}
+
+.glow-good {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+.glow-accent {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+}
+
+.text-gradient {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+}
+
+.border-gradient {
+    border: 2px solid transparent;
+    background: linear-gradient(var(--glass-bg), var(--glass-bg)) padding-box,
+                linear-gradient(135deg, var(--color-primary), var(--color-accent)) border-box;
+}
