@@ -246,6 +246,78 @@ server {
 - Sheet با email سرویس اکانت شیر شده؟
 
 ---
+اجرا بدون nginx
+1) مطمئن شو venv وجود دارد
+
+داخل همین مسیر:
+
+cd /root/adhd-dashboard
+python3 -m venv venv
+source venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+which gunicorn
+deactivate
+
+2) ساخت سرویسsystemd
+خروجی باید چیزی شبیه این باشد:
+/root/adhd-dashboard/.venv/bin/gunicorn
+
+قدم 2) فایل سرویس را اصلاح کن (مبنای /root و .venv)
+
+این فایل را باز کن:
+
+nano /etc/systemd/system/adhd-dashboard.service
+
+
+و این را دقیقاً جایگزین کن (بدون Nginx):
+
+[Unit]
+Description=ADHD Dashboard (Gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/adhd-dashboard
+
+Environment="PYTHONUNBUFFERED=1"
+Environment="PORT=5010"
+EnvironmentFile=-/root/adhd-dashboard/.env
+
+ExecStart=/root/adhd-dashboard/.venv/bin/gunicorn --bind 0.0.0.0:5010 --workers 2 --threads 4 --timeout 60 app:app
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
+
+نکته: من همه چیز را یک‌خطی گذاشتم که systemd با backslash و line continuation درگیر نشود.
+
+قدم 3) Reload و Restart
+
+بعد:
+
+systemctl daemon-reload
+systemctl restart adhd-dashboard
+systemctl status adhd-dashboard --no-pager
+
+
+اگر درست شده باشد باید Active: active (running) ببینی.
+
+قدم 4) تست پورت
+
+بعد:
+
+ss -lntp | grep 5010
+curl -I http://127.0.0.1:5010
+
+
+
+---
+---
 
 ## 📝 لایسنس
 
